@@ -1,0 +1,204 @@
+-- Create Database
+
+CREATE DATABASE Supply_chain_DB;
+GO
+
+-- Use Database
+
+USE Supply_chain_DB;
+GO
+
+-- Create tables
+
+CREATE TABLE SupplyChain_Orders (
+    [Type] VARCHAR(50),
+    [Days For Shipping (Real)] INT,
+    [Days For Shipment (Scheduled)] INT,
+    [Benefit Per Order] FLOAT,
+    [Sales Per Customer] FLOAT,
+    [Delivery Status] VARCHAR(50),
+    [Late Delivery Risk] INT,
+    [Category Id] INT,
+    [Category Name] VARCHAR(100),
+    [Customer City] VARCHAR(100),
+    [Customer Country] VARCHAR(100),
+    [Customer Email] VARCHAR(100),
+    [Customer First Name] VARCHAR(50),
+    [Customer Id] INT,
+    [Customer Last Name] VARCHAR(50),
+    [Customer Password] VARCHAR(100),
+    [Customer Segment] VARCHAR(50),
+    [Customer State] VARCHAR(100),
+    [Customer Street] VARCHAR(255),
+    [Customer Zipcode] VARCHAR(50), -- Kept as VARCHAR so leading zeros aren't deleted!
+    [Department Id] INT,
+    [Department Name] VARCHAR(100),
+    [Latitude] FLOAT,
+    [Longitude] FLOAT,
+    [Market] VARCHAR(50),
+    [Order City] VARCHAR(100),
+    [Order Country] VARCHAR(100),
+    [Order Customer Id] INT,
+    [Order Date (Date Orders)] DATETIME,
+    [Order Id] INT,
+    [Order Item Cardprod Id] INT,
+    [Order Item Discount] FLOAT,
+    [Order Item Discount Rate] FLOAT,
+    [Order Item Id] INT,
+    [Order Item Product Price] FLOAT,
+    [Order Item Profit Ratio] FLOAT,
+    [Order Item Quantity] INT,
+    [Sales] FLOAT,
+    [Order Item Total] FLOAT,
+    [Order Profit Per Order] FLOAT,
+    [Order Region] VARCHAR(100),
+    [Order State] VARCHAR(100),
+    [Order Status] VARCHAR(50),
+    [Order Zipcode] VARCHAR(50),   -- Kept as VARCHAR
+    [Product Card Id] INT,
+    [Product Category Id] INT,
+    [Product Image] VARCHAR(MAX),  -- Usually a long URL string
+    [Product Name] VARCHAR(255),
+    [Product Price] FLOAT,
+    [Product Status] VARCHAR(50),
+    [Shipping Date (Date Orders)] DATETIME,
+    [Shipping Mode] VARCHAR(50)
+);
+GO
+
+INSERT INTO DataCoSupplyChain
+SELECT * FROM DataCoSupplyChain_Raw;
+
+DROP TABLE DataCoSupplyChain_Raw;
+
+CREATE TABLE TokenizedAccessLogs (
+    [Products] VARCHAR(255),
+    [Category] VARCHAR(100),
+    [Date] DATE,
+    [Month] VARCHAR(50),
+    [Hour] INT,
+    [Department] VARCHAR(100),
+    [IP] VARCHAR(50),
+    [URL] VARCHAR(MAX)
+);
+GO
+
+INSERT INTO TokenizedAccessLogs
+SELECT * FROM TokenizedAccessLogs_Raw;
+
+DROP TABLE TokenizedAccessLogs_Raw;
+
+# Queries:
+
+-- 1. Overall Late Delivery Rate by Shipping Mode
+
+SELECT
+		Shipping_Mode,
+		COUNT(Order_Id) AS Total_Orders,
+		SUM(Late_Delivery_Risk) AS Late_Deliveries,
+		ROUND(CAST(SUM(Late_Delivery_Risk) AS FLOAT) * 100 / COUNT(Order_Id) , 2) AS Late_Deliveries_Rate_Percentage
+FROM DataCoSupplyChain
+GROUP BY Shipping_Mode
+ORDER BY Late_Deliveries_Rate_Percentage DESC;
+
+-- 2. Average Shipping Delay by Order Region
+
+SELECT
+		Order_Region AS Region,
+		ROUND(AVG(CAST(Days_For_Shipping_Real AS FLOAT)), 2) AS Avg_Actual_shipping_days,
+		ROUND(AVG(CAST(Days_For_Shipment_Scheduled AS FLOAT)), 2) AS Avg_Scheduled_delivery_days,
+		ROUND(AVG(CAST((Days_For_Shipping_Real - Days_For_Shipment_Scheduled) AS FLOAT)), 2) AS Avg_Delays_In_Days
+FROM DataCoSupplyChain
+GROUP BY Order_Region
+ORDER BY Avg_Delays_In_Days DESC;
+
+-- 3. Top 10 Most Profitable Product Categories
+
+SELECT TOP 10
+		Category_Name,
+		COUNT(Order_Id) AS Total_Item_Sold,
+		CONCAT(ROUND(SUM(Sales) / 1000000, 2), ' M') AS Total_Revenue_In_Millions,
+		CONCAT(ROUND(SUM(Order_Profit_Per_Order / 1000000), 2), ' M') AS Total_Profit_In_Millions,
+		ROUND(SUM(Order_Profit_Per_Order) / SUM(Sales) * 100, 2) AS Profit_Margin_Percentage
+FROM DataCoSupplyChain
+GROUP BY Category_Name
+ORDER BY Total_Profit_In_Millions DESC;
+
+-- 4. Order Cancellation & Return Rate By Market
+
+SELECT
+		Market,
+		COUNT(Order_Id) AS Total_Orders,
+		SUM(CASE WHEN Order_Status IN ('Suspected Fraud', 'Canceled', ' Returned', 'On Hold', 'Closed') THEN 1 ELSE 0 END) AS Bad_Orders,
+		ROUND(CAST(SUM(CASE WHEN Order_Status IN ('Suspected Fraud', 'Canceled', ' Returned', 'On Hold', 'Closed') THEN 1 ELSE 0 END) AS FLOAT) / COUNT(Order_Id) * 100 , 2) AS Cancellation_Return_Rate
+FROM DataCoSupplyChain
+GROUP BY Market
+ORDER BY Cancellation_Return_Rate DESC;
+
+-- 5. Customer Segmentation: Average Order Value(AOV)
+
+SELECT
+		Customer_Segment,
+		COUNT(DISTINCT Customer_Id) AS Unique_Customers,
+		COUNT(Order_Id) AS Total_Orders,
+		CONCAT(ROUND(SUM(Sales) / 1000000 , 2), ' M') AS Total_Revnue_In_Millions,
+		ROUND(SUM(Sales) / COUNT(Order_Id), 2) AS AOV
+FROM DataCoSupplyChain
+GROUP BY Customer_Segment
+ORDER BY AOV DESC;
+
+-- 6. Fraud Detection: High Discounts Yielding Negative Profit
+
+SELECT
+		Order_Id,
+		CONCAT(Customer_First_Name, ' ', Customer_Last_Name) AS Customer_Name,
+		Product_Name,
+		ROUND(Order_Item_Discount_Rate, 2) AS Order_Item_Discount_Rate,
+		ROUND(Sales, 2) AS Sales,
+		ROUND(Order_Profit_Per_Order, 2) AS Order_Profit_Per_Order
+FROM DataCoSupplyChain
+WHERE  Order_Profit_Per_Order < 0 AND Order_Item_Discount_Rate > 0.2
+ORDER BY Order_Profit_Per_Order ASC;
+
+-- 7. Monthly Sales and Volume Trend
+
+SELECT
+		YEAR(Order_Date) AS Sales_Year,
+		MONTH(Order_Date) AS Sales_Month,
+		COUNT(Order_Id) AS Monthly_Volumne,
+		CONCAT(ROUND(SUM(Sales) / 100000, 2), ' M') AS Monthly_Revenue_In_Millions
+FROM DataCoSupplyChain
+GROUP BY YEAR(Order_Date), MONTH(Order_Date)
+ORDER BY Sales_Year, Sales_Month;
+
+-- 8. Delivery Status Breakdown by Department
+
+SELECT
+		Department_Name,
+		SUM(CASE WHEN Delivery_Status = 'Advance shipping' THEN 1 ELSE 0 END) AS 'Shipped_Early',
+		SUM(CASE WHEN Delivery_Status = 'Shipping on time' THEN 1 ELSE 0 END) AS 'Shipped_On_Time',
+		SUM(CASE WHEN Delivery_Status = 'Late delivery' THEN 1 ELSE 0 END) AS 'Shipped_Late',
+		SUM(CASE WHEN Delivery_Status = 'Shipping canceled' THEN 1 ELSE 0 END) AS 'Canceled'
+FROM DataCoSupplyChain
+GROUP BY Department_Name
+ORDER BY Shipped_Late DESC;
+
+-- 9. Web Traffic: Peak Browsing Hours
+
+SELECT
+		Hour,
+		COUNT(DISTINCT IP) AS Unique_Vistors,
+		COUNT(URL) AS Total_Page_View
+FROM TokenizedAccessLogs
+GROUP BY Hour
+ORDER BY Total_Page_View DESC;
+
+-- 10. Web Traffic: Most Viewed vs. Most Bought Categories
+
+SELECT	TOP 10
+		Category,
+		COUNT(DISTINCT IP) AS Unique_Vsitors,
+		COUNT(URL) AS Total_Page_View
+FROM TokenizedAccessLogs
+GROUP BY Category
+ORDER BY Total_Page_View DESC;
