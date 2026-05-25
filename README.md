@@ -1,0 +1,2 @@
+# Supply-Chain-and-Logistics-Analytics
+Supply chain efficiency isn't just about moving boxes; it is the absolute backbone of a company's profitability.   I recently completed an end-to-end Supply Chain & Procurement Analytics project, taking raw logistics and web-traffic data and transforming it into an interactive executive dashboard. My goal was to move beyond simple reporting and uncover the actual bottlenecks costing the business money.
