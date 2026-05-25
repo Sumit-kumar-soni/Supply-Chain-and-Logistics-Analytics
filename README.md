@@ -26,3 +26,25 @@ This project is an end-to-end data analytics solution designed to evaluate suppl
 * `Dataco_SupplyChainAnalytics.pbix`: The final Power BI project file containing the DAX measures and interactive visuals.
 * `Dashboard_Screenshots/`: High-resolution images of the final dashboard (Executive Overview, Regional Routing, and Product Profitability).
 * <img width="1920" height="1031" alt="SupplyChainDashboard " src="https://github.com/user-attachments/assets/9e603e05-49bf-4913-afae-0139d2275e71" />
+
+---
+
+## ☕ Stay Connected
+
+Let's stay in touch! Feel free to connect with me on the following platforms:
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/sumit-kumar-soni-7b504224b/)
+
+---
+
+## 🛡️ License
+
+This project is licensed under the [MIT License](LICENSE). You are free to use, modify, and share this project with proper attribution.
+
+## 🌟 About Me
+
+Hi there! I'm **Sumit Kumar Soni**. I’m passionate Data Analyst on a mission to share insight by using data and make working with data enjoyable and engaging!
+
+Let's stay in touch! Feel free to connect with me on the following platforms:
+
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/sumit-kumar-soni-7b504224b/)
